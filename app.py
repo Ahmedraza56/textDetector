@@ -1,25 +1,26 @@
 import streamlit as st
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+import torch
 
-# Load the pre-trained GPT-2 model and tokenizer
-model = GPT2LMHeadModel.from_pretrained("gpt2")
-tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-
-def generate_text(prompt, model, tokenizer, max_length=5000):
-    input_ids = tokenizer.encode(prompt, return_tensors="pt")
-    output_ids = model.generate(input_ids, max_length=max_length, num_beams=5, no_repeat_ngram_size=2, top_k=50, top_p=0.95, temperature=0.7)
-    generated_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
-    return generated_text.strip()
+# Load pre-trained DistilBERT model and tokenizer
+tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+model = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased')
 
 def check_text(text):
-    # Generate text using the model
-    generated_text = generate_text(text, model, tokenizer)
+    # Tokenize and convert to model input format
+    inputs = tokenizer(text, return_tensors='pt', truncation=True, padding=True)
 
-    # Analyze the response and classify as AI-generated or human-written
-    if generated_text.lower() == text.lower():
-        return "This text is likely AI-generated."
+    # Make a prediction
+    outputs = model(**inputs)
+
+    # Get predicted label
+    prediction = torch.argmax(outputs.logits).item()
+
+    # Analyze the prediction and classify as AI-generated or human-written
+    if prediction == 0:  # You may need to adjust this based on your model
+        return "This text is likely human-written."
     else:
-        return "This text appears to be human-written."
+        return "This text appears to be AI-generated."
 
 def main():
     st.title("Text Detector")
@@ -36,4 +37,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

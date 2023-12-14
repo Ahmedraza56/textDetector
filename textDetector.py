@@ -1,6 +1,8 @@
-import streamlit as st
+from flask import Flask, render_template, request
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 import torch
+
+textDetector = Flask(__name__)
 
 # Load pre-trained DistilBERT model and tokenizer
 tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
@@ -22,18 +24,19 @@ def check_text(text):
     else:
         return "This text appears to be AI-generated."
 
-def main():
-    st.title("Text Detector")
+@textDetector.route('/')
+def index():
+    return render_template('textDetector.html')
 
-    # Get user input
-    user_input = st.text_area("Enter text:")
+@textDetector.route('/', methods=['POST'])
+def process_text():
+    user_input = request.form['user_input']
 
-    if st.button("Check"):
-        if user_input:
-            result = check_text(user_input)
-            st.write(result)
-        else:
-            st.warning("Please enter some text.")
+    if user_input:
+        result = check_text(user_input)
+        return render_template('textDetector.html', result=result, user_input=user_input)
+    else:
+        return render_template('textDetector.html', warning="Please enter some text.")
 
 if __name__ == "__main__":
-    main()
+    textDetector.run(debug=True)
